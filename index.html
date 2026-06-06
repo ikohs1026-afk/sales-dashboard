@@ -250,7 +250,7 @@ input:focus{outline:none;border-color:var(--cn)}
 var db={sales:[],subs:[],seminars:[]};
 var lf='全院';
 var API_KEY='$2a$10$YJHJ2.E9m1OEDeTY2Y9yLunygPBswtLz9JyzjbprMMySgPS7e/Yri';
-var binId='6a22cbf9da38895dfe8c58c3';
+var binId='6a238998f5f4af5e29c0eca1'
 var lastSaved='';
 var pollInterval=null;
 
@@ -383,7 +383,7 @@ async function loadShared(){
   }catch(e){setStatus('⚠ 読込エラー',false);}
 }
 async function startPolling(){
-  awa
+  
   await loadShared();
   pollInterval=setInterval(loadShared,10000);
 }
