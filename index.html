@@ -383,7 +383,7 @@ async function loadShared(){
   }catch(e){setStatus('⚠ 読込エラー',false);}
 }
 async function startPolling(){
-  await createBin();
+  awa
   await loadShared();
   pollInterval=setInterval(loadShared,10000);
 }
