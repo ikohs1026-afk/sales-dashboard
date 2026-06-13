@@ -1,14 +1,11 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
+<html lang="<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>売上管理 - 3院統合ダッシュボード</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--cn:#D85A30;--ct:#378ADD;--ctk:#1D9E75;--cs:#7F77DD;--csem:#0e8a9b;--bg:#f5f4f0;--card:#fff;--border:#e0ddd6;--txt:#1a1a1a;--txt2:#666;--txt3:#999}
 body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
-.hdr{background:#1a1a1a;padding:16px;color:white}
+.hdr{background:adding:16px;color:white}
 .hdr h1{font-size:20px;font-weight:600;display:inline}
 .hdr .sub{font-size:13px;color:#aaa;margin-left:8px}
 .hdr-btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
@@ -115,9 +112,7 @@ input:focus{outline:none;border-color:var(--cn)}
 #lock-btn{width:100%;max-width:280px;padding:14px;background:var(--cn);color:white;border:none;border-radius:12px;font-size:16px;font-weight:600;cursor:pointer;-webkit-appearance:none}
 #lock-err{color:#e74c3c;font-size:13px;margin-top:10px;min-height:20px}
 #app{display:none}
-</style>
-</head>
-<body>
+</
 
 <div id="toast" class="toast"></div>
 
@@ -1401,18 +1396,14 @@ function printPDF(){
     +'h1{font-size:22px;font-weight:700;margin-bottom:4px}'
     +'.meta{font-size:13px;color:#666;margin-bottom:28px}'
     +'h2{font-size:15px;font-weight:700;margin:24px 0 10px;padding-bottom:6px;border-bottom:2px solid #1a1a1a}'
-    +'table{width:100%;border-collapse:collapse;font-size:13px}'
-    +'th{background:#1a1a1a;color:white;padding:8px 6px;text-align:left;font-weight:600}'
-    +'th.r{text-align:right}'
+    +'    +'th.r{text-align:right}'
     +'tr:nth-child(even){background:#f9f8f5}'
     +'.total-box{background:#1a1a1a;color:white;border-radius:10px;padding:16px 24px;margin:24px 0;display:flex;justify-content:space-between;align-items:center}'
     +'.total-lbl{font-size:13px;opacity:.7}'
     +'.total-val{font-size:28px;font-weight:700}'
     +'.footer{margin-top:32px;font-size:11px;color:#aaa;text-align:right}'
     +'@media print{body{padding:16px}}'
-    +'</style></head><body>'
-    +'<h1>売上集計レポート</h1>'
-    +'<div class="meta">出力日：'+dateStr+' ／ 売上'+db.sales.length+'件 サブスク'+db.subs.length+'件 セミナー'+db.seminars.length+'件</div>'
+    +'</style></head><body>'    +'<div class="meta">出力日：'+dateStr+' ／ 売上'+db.sales.length+'件 サブスク'+db.subs.length+'件 セミナー'+db.seminars.length+'件</div>'
     +'<div class="total-box"><div><div class="total-lbl">累計売上合計</div><div class="total-val">¥'+fmt(grandTotal)+'</div></div>'
     +'<div style="text-align:right"><div class="total-lbl">売上</div><div style="font-size:16px;font-weight:600">¥'+fmt(db.sales.reduce(function(a,x){return a+x.amount;},0))+'</div></div>'
     +'<div style="text-align:right"><div class="total-lbl">サブスク</div><div style="font-size:16px;font-weight:600;color:#b0a0ff">¥'+fmt(db.subs.reduce(function(a,x){return a+x.amount;},0))+'</div></div>'
@@ -1424,10 +1415,7 @@ function printPDF(){
     +'<h2>月別集計</h2>'
     +'<table><thead><tr><th>月</th><th class="r">売上</th><th class="r">サブスク</th><th class="r">セミナー</th><th class="r">合計</th><th>客数</th><th>院別内訳</th></tr></thead>'
     +'<tbody>'+monthRows+'</tbody></table>'
-    +'<div class="footer">売上管理 3院統合ダッシュボード ／ '+dateStr+' 出力</div>'
-    +'</body></html>';
-
-  // iframeを使った印刷（iOSのwindow.openブロック対策）
+    +'<div class="footer">売上管理 3院統合  // iframeを使った印刷（iOSのwindow.openブロック対策）
   var iframe=document.createElement('iframe');
   iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0';
   document.body.appendChild(iframe);
