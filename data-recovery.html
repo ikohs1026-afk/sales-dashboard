@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>データ復元ツール</title>
+<style>
+  :root{
+    --bg:#14161a; --panel:#1c1f26; --panel2:#22262f; --line:#2d323d;
+    --text:#eef0f3; --sub:#9aa3b2; --accent:#4fb0a8; --warn:#e8895a; --danger:#e8617a;
+    --ok:#5fbf8f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Yu Gothic",sans-serif;
+    line-height:1.6; padding-bottom:60px;
+  }
+  header{
+    padding:28px 20px 20px; border-bottom:1px solid var(--line);
+    position:sticky; top:0; background:var(--bg); z-index:5;
+  }
+  h1{font-size:20px; margin:0 0 4px; letter-spacing:.02em;}
+  .sub{color:var(--sub); font-size:13px;}
+  main{max-width:640px; margin:0 auto; padding:20px 16px;}
+  .status{
+    padding:14px 16px; border-radius:10px; background:var(--panel);
+    border:1px solid var(--line); font-size:14px; margin-bottom:18px;
+  }
+  .status.err{border-color:var(--danger); color:#ffb4c2;}
+  .status.ok{border-color:var(--ok); color:#a6ecc7;}
+  .ver-card{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:16px; margin-bottom:12px;
+  }
+  .ver-card.current{border-color:var(--accent);}
+  .ver-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:10px;}
+  .ver-num{font-size:15px; font-weight:600;}
+  .ver-badge{
+    font-size:11px; color:var(--accent); border:1px solid var(--accent);
+    border-radius:999px; padding:2px 8px;
+  }
+  .ver-time{font-size:12px; color:var(--sub);}
+  .counts{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px;}
+  .count-pill{
+    background:var(--panel2); border-radius:8px; padding:6px 10px; font-size:12.5px;
+    color:var(--sub);
+  }
+  .count-pill b{color:var(--text); font-size:14px;}
+  .range{font-size:12px; color:var(--sub); margin-bottom:12px;}
+  button{
+    font-family:inherit; font-size:14px; border:none; border-radius:8px;
+    padding:10px 16px; cursor:pointer; font-weight:600;
+  }
+  .btn-restore{background:var(--accent); color:#0b1210; width:100%;}
+  .btn-restore:disabled{opacity:.4;}
+  .btn-retry{background:var(--panel2); color:var(--text); border:1px solid var(--line);}
+  .loading{color:var(--sub); font-size:14px; padding:30px 0; text-align:center;}
+  .empty{color:var(--sub); font-size:14px; text-align:center; padding:40px 0;}
+  .note{font-size:12px; color:var(--sub); margin-top:24px; padding:14px; background:var(--panel); border-radius:10px; border:1px solid var(--line);}
+</style>
+</head>
+<body>
+<header>
+  <h1>売上管理 データ復元ツール</h1>
+  <div class="sub">JSONBin.ioに残っている過去の保存履歴から復元します</div>
+</header>
+<main>
+  <div id="status" class="status">履歴を確認しています…</div>
+  <div id="list"></div>
+  <div id="note" class="note" style="display:none">
+    ⚠️ 復元すると、現在保存されているデータ（このツールで確認した最新の状態）は上書きされます。復元前に必要であれば現在のデータをダッシュボード側の「エクスポート」機能で保存しておいてください。
+  </div>
+</main>
+
+<script>
+var BIN_ID='6a238998f5f4af5e29c0eca1';
+var API_KEY='$2a$10$YJHJ2.E9m1OEDeTY2Y9yLunygPBswtLz9JyzjbprMMySgPS7e/Yri';
+var BASE='https://api.jsonbin.io/v3/b/'+BIN_ID;
+
+function setStatus(msg, cls){
+  var el=document.getElementById('status');
+  el.textContent=msg;
+  el.className='status'+(cls?' '+cls:'');
+}
+
+function fmtTime(iso){
+  if(!iso) return '';
+  var d=new Date(iso);
+  return d.toLocaleString('ja-JP',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+
+function dateRange(arr){
+  var dates=(arr||[]).map(function(x){return x.date;}).filter(Boolean).sort();
+  if(!dates.length) return 'データなし';
+  return dates[0]+' 〜 '+dates[dates.length-1];
+}
+
+async function fetchVersion(v){
+  var r=await fetch(BASE+'/'+v, {headers:{'X-Master-Key':API_KEY}});
+  if(!r.ok) return null;
+  var data=await r.json();
+  return data;
+}
+
+async function fetchLatest(){
+  var r=await fetch(BASE+'/latest', {headers:{'X-Master-Key':API_KEY}});
+  if(!r.ok) return null;
+  return await r.json();
+}
+
+async function fetchCount(){
+  try{
+    var r=await fetch(BASE+'/versions/count', {headers:{'X-Master-Key':API_KEY}});
+    if(!r.ok) return null;
+    var data=await r.json();
+    return data && data.record ? data.record.count : null;
+  }catch(e){return null;}
+}
+
+function renderCard(v, data, isCurrent){
+  var rec=data.record||{};
+  var meta=data.metadata||{};
+  var card=document.createElement('div');
+  card.className='ver-card'+(isCurrent?' current':'');
+
+  var top=document.createElement('div');
+  top.className='ver-top';
+  var left=document.createElement('div');
+  left.innerHTML='<span class="ver-num">バージョン '+v+'</span>'+(isCurrent?' <span class="ver-badge">現在</span>':'');
+  var time=document.createElement('div');
+  time.className='ver-time';
+  time.textContent=fmtTime(meta.createdAt);
+  top.appendChild(left);
+  top.appendChild(time);
+  card.appendChild(top);
+
+  var counts=document.createElement('div');
+  counts.className='counts';
+  var items=[
+    ['売上',(rec.sales||[]).length],
+    ['サブスク',(rec.subs||[]).length],
+    ['セミナー',(rec.seminars||[]).length],
+    ['その他',(rec.others||[]).length],
+    ['客数記録',(rec.customers||[]).length]
+  ];
+  items.forEach(function(it){
+    var p=document.createElement('div');
+    p.className='count-pill';
+    p.innerHTML='<b>'+it[1]+'</b> '+it[0];
+    counts.appendChild(p);
+  });
+  card.appendChild(counts);
+
+  var range=document.createElement('div');
+  range.className='range';
+  range.textContent='売上データの日付範囲: '+dateRange(rec.sales);
+  card.appendChild(range);
+
+  if(!isCurrent){
+    var btn=document.createElement('button');
+    btn.className='btn-restore';
+    btn.textContent='このバージョンを復元する';
+    btn.onclick=function(){ restore(v, rec, btn); };
+    card.appendChild(btn);
+  }
+
+  return card;
+}
+
+async function restore(v, rec, btn){
+  if(!confirm('バージョン '+v+' の内容で、現在のデータを上書きします。よろしいですか？')) return;
+  btn.disabled=true;
+  btn.textContent='復元中…';
+  try{
+    var r=await fetch(BASE, {
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Master-Key':API_KEY},
+      body:JSON.stringify(rec)
+    });
+    if(r.ok){
+      btn.textContent='✓ 復元しました';
+      setStatus('バージョン '+v+' を復元しました。ダッシュボードのページを開き直して確認してください。','ok');
+    }else{
+      btn.disabled=false;
+      btn.textContent='このバージョンを復元する';
+      setStatus('復元に失敗しました（HTTP '+r.status+'）。時間をおいて再度お試しください。','err');
+    }
+  }catch(e){
+    btn.disabled=false;
+    btn.textContent='このバージョンを復元する';
+    setStatus('復元エラー: '+e.message,'err');
+  }
+}
+
+async function main(){
+  var list=document.getElementById('list');
+  list.innerHTML='';
+
+  var latest=await fetchLatest();
+  if(!latest){
+    setStatus('現在のデータの取得に失敗しました。通信状況を確認してください。','err');
+    return;
+  }
+
+  var count=await fetchCount();
+  var maxV = count || 30;
+
+  setStatus('履歴を読み込み中… (0/'+maxV+')');
+
+  var found=[];
+  for(var v=maxV; v>=1; v--){
+    var data=await fetchVersion(v);
+    if(data) found.push([v,data]);
+    setStatus('履歴を読み込み中… ('+(maxV-v+1)+'/'+maxV+')');
+  }
+
+  if(!found.length){
+    setStatus('過去バージョンの履歴が見つかりませんでした。','err');
+    var empty=document.createElement('div');
+    empty.className='empty';
+    empty.textContent='このBinには過去バージョンの記録がありませんでした。';
+    list.appendChild(empty);
+    return;
+  }
+
+  setStatus('過去 '+found.length+' 件のバージョンが見つかりました。件数が多いものを選んで復元してください。','ok');
+
+  var currentSalesCount=(latest.record.sales||[]).length;
+  found.forEach(function(pair, idx){
+    var v=pair[0], data=pair[1];
+    var isCurrent = idx===0 && (data.record.sales||[]).length===currentSalesCount;
+    list.appendChild(renderCard(v, data, isCurrent));
+  });
+
+  document.getElementById('note').style.display='block';
+}
+
+main();
+</script>
+</body>
+</html>
