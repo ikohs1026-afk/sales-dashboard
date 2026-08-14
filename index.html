@@ -689,16 +689,21 @@ async function loadShared(){
     if(data.record&&Array.isArray(data.record.sales)){
       var newVal=JSON.stringify(data.record);
       if(newVal!==lastSaved){
-        db=data.record;
+db=data.record;
         if(!db.subs)db.subs=[];
         if(!db.seminars)db.seminars=[];
         if(!db.customers)db.customers=[];
         if(!db.repeats)db.repeats=[];
         if(!db.others)db.others=[];
-        cleanOrphanData();
         lastSaved=JSON.stringify(db);
-        updateCounts();renderList();renderStats();
-        setStatus('↓ 更新（'+new Date().toLocaleTimeString('ja-JP')+'）',true);
+        try{
+          cleanOrphanData();
+          updateCounts();renderList();renderStats();
+          setStatus('↓ 更新（'+new Date().toLocaleTimeString('ja-JP')+'）',true);
+        }catch(renderErr){
+          console.error('render failed',renderErr);
+          setStatus('⚠ 表示エラー: '+renderErr.message,false);
+          }
       }else{setStatus('✓ 最新（'+new Date().toLocaleTimeString('ja-JP')+'）',true);}
     }else{
       setStatus('⚠ 読込エラー: データ形式が不正です',false);
