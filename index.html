@@ -645,7 +645,6 @@ function fetchWithTimeout(url,opts,ms){
   var timer=setTimeout(function(){controller.abort();},ms);
   var p=fetch(url,Object.assign({},opts,{signal:controller.signal}));
   return p.then(function(r){clearTimeout(timer);return r;},function(e){clearTimeout(timer);throw e;});
-}
 
 async function saveShared(){
   if(!binId)return;
@@ -656,12 +655,25 @@ async function saveShared(){
       method:'PUT',
       headers:{'Content-Type':'application/json','X-Master-Key':API_KEY},
       body:val
-    },5000);
+    },20000);
+    if(!r.ok){
+      var errText='';
+      try{var errData=await r.json();errText=errData&&errData.message?errData.message:('HTTP '+r.status);}catch(e2){errText='HTTP '+r.status;}
+      setStatus('⚠ 保存失敗: '+errText,false);
+      console.error('saveShared failed',r.status,errText);
+      return;
+    }
     var data=await r.json();
     if(data.record){lastSaved=val;setStatus('✓ 同期済み（'+new Date().toLocaleTimeString('ja-JP')+'）',true);}
-    else{setStatus('⚠ 保存失敗',false);}
-  }catch(e){setStatus('⚠ 保存エラー（オフライン）',false);}
+    else{setStatus('⚠ 保存失敗: データ形式が不正です',false);}
+  }catch(e){
+    var reason=e.name==='AbortError'?'タイムアウト（通信が遅い可能性があります）':e.message;
+    setStatus('⚠ 保存エラー: '+reason,false);
+    console.error('saveShared exception',e);
+  }
 }
+
+
 async function loadShared(){
   if(!binId)return;
   try{
