@@ -618,35 +618,25 @@ function toggleRepeat(customerId){
   saveShared();
   updateRepeatCustomerList();
 }
-
-async function createBin(){
-  try{
-    setStatus('初期設定中...',null);
-    var r=await fetch('https://api.jsonbin.io/v3/b',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-Master-Key':API_KEY,'X-Bin-Name':'sales-dashboard','X-Bin-Private':'false'},
-      body:JSON.stringify({sales:[],subs:[],seminars:[]})
-    });
-    var data=await r.json();
-    if(data.metadata&&data.metadata.id){
-      binId=data.metadata.id;
-      localStorage.setItem('salesDashBinId',binId);
-      document.getElementById('bin-id-display').textContent=binId;
-      document.getElementById('bin-id-bar').style.display='block';
-      setStatus('✓ 接続完了',true);
-      return true;
-    }
-    setStatus('⚠ 接続失敗',false);return false;
-  }catch(e){setStatus('⚠ エラー: '+e.message,false);return false;}
-}
-function fetchWithTimeout(url,opts,ms){
-  ms=ms||5000;
-  var controller=new AbortController();
-  var timer=setTimeout(function(){controller.abort();},ms);
-  var p=fetch(url,Object.assign({},opts,{signal:controller.signal}));
-  return p.then(function(r){clearTimeout(timer);return r;},function(e){clearTimeout(timer);throw e;});
-
 async function saveShared(){
+  if(!binId)return;
+  try{
+    var val=JSON.stringify(db);
+    if(val===lastSaved)return;
+    var r=await fetchWithTimeout('https://api.jsonbin.io/v3/b/'+binId,{
+      method:'PUT',
+      headers:{'Content-Type':'application/json','X-Master-Key':API_KEY},
+      body:val
+    },20000);
+    if(!r.ok){
+      var errText='';
+      try{var errData=await r.json();errText=errData&&errData.message?errData.message:('HTTP '+r.status);}catch(e2){errText='HTTP '+r.status;}
+      setStatus('⚠ 保存失敗: '+errText,false);
+      console.error('saveShared failed',r.status,errText);
+      return;
+    }
+    var data=await r.json();
+    if(data.record){lasasync function saveShared(){
   if(!binId)return;
   try{
     var val=JSON.stringify(db);
@@ -672,8 +662,6 @@ async function saveShared(){
     console.error('saveShared exception',e);
   }
 }
-
-
 async function loadShared(){
   if(!binId)return;
   try{
